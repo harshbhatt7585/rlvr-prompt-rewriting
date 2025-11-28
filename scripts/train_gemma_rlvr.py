@@ -48,10 +48,10 @@ client = AzureOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
 )
 
-
+device = 'cuda'
 model_name = "google/gemma-3-1b-it"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
 
 
 lora_config = LoraConfig(
@@ -65,7 +65,7 @@ model.print_trainable_parameters()
 deployment = "gpt-4"
 
 
-def load_dataset():
+def get_dataset():
     dataset = load_from_disk("./dataset")
     return dataset['train']
 
@@ -81,7 +81,7 @@ def judge_response(answer):
             },
             {
                 "role": "user",
-                "content": prompt,
+                "content": answer,
             },
         ],
         max_completion_tokens=13107,
@@ -97,27 +97,22 @@ def judge_response(answer):
 
 
 def generate_response(prompt):
-    messages = apply_chat_template(
-        model=model,
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a prompt enhancement assistant. You are given a prompt and you need to enhance it to add fine details for world class output.",
-            },
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ],
-    )
-    inputs = tokenizer(messages, return_tensors="pt")
+    messages = [
+        {
+            "role": "user",
+            "content": prompt,
+        },
+    ]
+    formatted = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    inputs = tokenizer(formatted, return_tensors="pt")
+    inputs = inputs.to(device)
     outputs = model.generate(**inputs, max_new_tokens=1024)
     answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return answer
     
 
 
-dataset = load_dataset()
+dataset = get_dataset()
 EPOCHS = 10
 for epoch in range(EPOCHS):
     for data in dataset:
@@ -125,3 +120,4 @@ for epoch in range(EPOCHS):
         response = generate_response(prompt)
         print(response)
         break
+    break

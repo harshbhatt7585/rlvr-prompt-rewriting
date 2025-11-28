@@ -18,6 +18,8 @@ Do the following steps:
 3. If required add styling, colours, fonts, layouts, animations, etc. to the prompt to more aesthetic and visually appealing output.
 4. Return the rewritten prompt in the json format.
 
+Note: Don't provide explanation and conclusion. Only return the rewritten prompt in the json format.
+
 Prompt:
 {instruction}
 """
