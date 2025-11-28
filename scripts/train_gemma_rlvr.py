@@ -96,6 +96,27 @@ def judge_response(answer):
     return response.choices[0].message.content
 
 
+def generate_response(prompt):
+    messages = apply_chat_template(
+        model=model,
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a prompt enhancement assistant. You are given a prompt and you need to enhance it to add fine details for world class output.",
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+    )
+    inputs = tokenizer(messages, return_tensors="pt")
+    outputs = model.generate(**inputs, max_new_tokens=1024)
+    answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return answer
+    
+
+
 dataset = load_dataset()
 EPOCHS = 10
 for epoch in range(EPOCHS):
