@@ -1,0 +1,2 @@
+[console_scripts]
+prompt-rewriting-train = prompt_rewriting.cli:main

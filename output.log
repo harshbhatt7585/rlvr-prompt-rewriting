@@ -1,0 +1,31 @@
+/Users/harshbhatt/miniconda3/lib/python3.13/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/Users/harshbhatt/miniconda3/lib/python3.13/site-packages/trl/trainer/ppo_trainer.py:200: UserWarning: This trainer will soon be moved to trl.experimental and is a candidate for removal. If you rely on it and want it to remain, please share your comments here: https://github.com/huggingface/trl/issues/4223. Silence this warning by setting environment variable TRL_EXPERIMENTAL_SILENCE=1.
+  warnings.warn(
+Starting training with 0 batches
+Traceback (most recent call last):
+  File "/Users/harshbhatt/Projects/rl-projects/prompt-rewriting/scripts/train_gemma_rlvr.py", line 269, in <module>
+    main()
+    ~~~~^^
+  File "/Users/harshbhatt/Projects/rl-projects/prompt-rewriting/scripts/train_gemma_rlvr.py", line 263, in main
+    trainer.accelerator.unwrap_model(trainer.model.policy).save_pretrained(save_dir, safe_serialization=False)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/harshbhatt/miniconda3/lib/python3.13/site-packages/transformers/modeling_utils.py", line 4175, in save_pretrained
+    save_function(shard, os.path.join(save_directory, shard_file))
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/harshbhatt/miniconda3/lib/python3.13/site-packages/torch/serialization.py", line 967, in save
+    _save(
+    ~~~~~^
+        obj,
+        ^^^^
+    ...<3 lines>...
+        _disable_byteorder_record,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/harshbhatt/miniconda3/lib/python3.13/site-packages/torch/serialization.py", line 1266, in _save
+    storage = storage.cpu()
+  File "/Users/harshbhatt/miniconda3/lib/python3.13/site-packages/torch/storage.py", line 266, in cpu
+    return torch.UntypedStorage(self.size()).copy_(self, False)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+KeyboardInterrupt

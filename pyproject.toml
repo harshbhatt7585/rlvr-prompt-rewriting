@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prompt-rewriting"
+version = "0.1.0"
+description = "Reinforcement learning playground for making text friendlier using an LLM-based reward signal."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+  { name = "Harsh Bhatt" }
+]
+license = {text = "MIT"}
+dependencies = [
+  "numpy>=1.23"
+]
+
+[project.optional-dependencies]
+llm = ["openai>=1.0.0"]
+dev = ["pytest>=7.4"]
+gemma = [
+  "transformers>=4.40.0",
+  "trl>=0.9.6",
+  "accelerate>=0.27.0",
+  "datasets>=2.18.0",
+  "torch>=2.1.0",
+]
+
+[project.scripts]
+prompt-rewriting-train = "prompt_rewriting.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]

@@ -1,0 +1,89 @@
+# Prompt Rewriting with LLM Reward
+
+A tiny reinforcement-learning project that teaches an agent to rewrite terse sentences so they sound friendlier. The environment supplies a single-step reward from either a lightweight heuristic or an actual LLM call, making it a gentle first foray into training policies with a reward model.
+
+## Why this project?
+
+- **Hands-on RLVR** – practise reinforcement learning from a model-derived reward without diving into huge models.
+- **Swappable reward backends** – plug in your own LLM (e.g. OpenAI Responses API) or keep everything offline with the built-in heuristic scorer.
+- **Readable code** – short modules, pure Python + NumPy, easy to extend with new rewrite actions or policies.
+
+## Project layout
+
+```
+.
+├── data/
+│   └── rude_sentences.json      # sample sentences to soften
+├── src/prompt_rewriting/
+│   ├── actions.py               # rewrite operators (e.g. add "please", add empathy)
+│   ├── cli.py                   # training CLI (installable as prompt-rewriting-train)
+│   ├── environment.py           # one-step environment with reward model
+│   ├── policy.py                # simple categorical policy trained with REINFORCE
+│   ├── reward.py                # heuristic and OpenAI-backed reward models
+│   └── training.py              # training loop + helpers
+└── tests/                       # pytest-based sanity checks
+```
+
+## Getting started
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]
+```
+
+Run the baseline training loop with the heuristic reward:
+
+```bash
+prompt-rewriting-train --episodes 200
+```
+
+Prefer a Python entry point over the CLI? Edit and run `scripts/run_training.py` (it automatically loads `.env` in the project root so you can keep your Azure credentials there).
+
+### Training Gemma with RLVR (experimental)
+
+To explore RLVR against a full LLM policy, use the Gemma PPO scaffold. You will need a GPU with sufficient VRAM and the optional dependencies.
+
+```bash
+pip install -e .[gemma]
+huggingface-cli login  # or set HF_TOKEN / HUGGINGFACE_TOKEN for gated Gemma weights
+python scripts/train_gemma_rlvr.py
+```
+
+The script loads `google/gemma-1.1-1b-it` via Hugging Face Transformers and optimises it with TRL's PPO loop using whichever reward backend you configure (heuristic, OpenAI, or Azure). Update the `CONFIG` dictionary or environment variables (e.g. `PROMPT_RL_REWARD=openai`, `HF_TOKEN=<huggingface-token>`) before launching. Outputs are written to `outputs/gemma-ppo/`.
+
+After training, the CLI prints the policy's preferred rewrite for each sentence in the dataset.
+
+### Using an LLM reward
+
+#### OpenAI Responses API
+
+```bash
+export OPENAI_API_KEY=...
+prompt-rewriting-train --reward-model openai --openai-model gpt-4o-mini
+```
+
+#### Azure OpenAI
+
+```bash
+export AZURE_OPENAI_ENDPOINT="https://<resource>.cognitiveservices.azure.com/"
+export AZURE_OPENAI_DEPLOYMENT="gpt-4"
+export AZURE_OPENAI_API_KEY="<your-api-key>"
+prompt-rewriting-train --reward-model azure-openai --azure-api-version 2024-12-01-preview
+```
+
+You can also supply the Azure parameters through CLI flags (`--azure-endpoint`, `--azure-deployment`, and `--azure-api-key`). Both reward backends rely on the `openai` Python package ≥1.0.0.
+
+## Extending the playground
+
+- **Add rewrite actions** by appending a new `RewriteAction` to `DEFAULT_ACTIONS` in `actions.py`.
+- **Swap policies** by implementing an alternative to `CategoricalPolicy` and reusing `PromptRewriteEnv`.
+- **Curate data** by editing `data/rude_sentences.json` or pointing the CLI to your own file with `--data`.
+
+## Testing
+
+```bash
+pytest
+```
+
+The tests exercise the heuristic reward, individual actions, and a tiny training run to ensure reward-guided learning improves friendliness.
