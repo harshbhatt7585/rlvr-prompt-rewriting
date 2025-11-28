@@ -1,11 +1,33 @@
 """
 Training a gemma model to rewrite prompts to generate best outputs from model.
 
+"Autoregressive Prompt Booster for Coding Models"
+
 Approch:
 1. Use gemma 3 1b model to rewrite prompts for himself to generate best outputs for a given task.
 2. Judge the output with openai gpt4.1 model to score between 0 to 5. This act a reward.
 3. Use the reward to update the model.
 4. Use LoRA to finetune the model.
+
+You should train a model that rewrites vague frontend prompts into high-quality UI design prompts.
+
+This is far more useful than coding prompt rewriting because:
+
+Frontend design is extremely subjective
+
+Users struggle to express what they want
+
+Designers struggle to translate vague instructions
+
+LLMs can do UI, but only when the prompt is detailed
+
+Your Gemma 1B learns to turn:
+
+“Make this page look nicer”
+
+into:
+
+“Create a modern, minimal, responsive landing page with a bold title, a two-column layout, generous white space, a soft gradient header, and Tailwind CSS. Use rounded cards, a clean hero section, and consistent spacing with 8-point grid.”
 
 """
 
@@ -41,6 +63,7 @@ model = get_peft_model(model, lora_config)
 model.print_trainable_parameters()
 
 deployment = "gpt-4"
+
 
 response = client.chat.completions.create(
     messages=[
