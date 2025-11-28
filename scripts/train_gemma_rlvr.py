@@ -36,7 +36,7 @@ import torch
 import transformers
 from peft import LoraConfig, get_peft_model
 from datasets import load_dataset, load_from_disk
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from openai import AzureOpenAI
 from dotenv import load_dotenv
 import json
@@ -51,8 +51,22 @@ client = AzureOpenAI(
 
 device = 'cuda'
 model_name = "google/gemma-3-1b-it"
+
+# Configure 4-bit quantization for faster inference and lower memory usage
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.bfloat16,
+    bnb_4bit_use_double_quant=True,
+)
+
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    quantization_config=bnb_config,
+    device_map="auto",
+    attn_implementation="sdpa",  # Use SDPA (built into PyTorch 2.0+, no flash-attn needed)
+)
 
 
 lora_config = LoraConfig(
@@ -62,6 +76,10 @@ lora_config = LoraConfig(
 )
 model = get_peft_model(model, lora_config)
 model.print_trainable_parameters()
+
+# Optional: torch.compile for additional speedup (may not work with quantization + PEFT)
+# Uncomment if not using quantization or if it works with your setup
+# model = torch.compile(model, mode="reduce-overhead")
 
 deployment = "gpt-4"
 
@@ -105,9 +123,17 @@ def generate_response(prompt):
         },
     ]
     formatted = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    inputs = tokenizer(formatted, return_tensors="pt")
-    inputs = inputs.to(device)
-    outputs = model.generate(**inputs, max_new_tokens=1024)
+    inputs = tokenizer(formatted, return_tensors="pt").to(model.device)
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=1024,
+        do_sample=True,
+        temperature=0.7,
+        top_p=0.9,
+        top_k=50,
+        repetition_penalty=1.1,
+        pad_token_id=tokenizer.eos_token_id,
+    )
     generated_tokens = outputs[0][inputs["input_ids"].shape[1]:]
     answer = tokenizer.decode(generated_tokens, skip_special_tokens=True)
     return answer
@@ -125,9 +151,13 @@ def generate_code(prompt):
         },
     ]
     formatted = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    inputs = tokenizer(formatted, return_tensors="pt")
-    inputs = inputs.to(device)
-    outputs = model.generate(**inputs, max_new_tokens=1024, temperature=0.01)
+    inputs = tokenizer(formatted, return_tensors="pt").to(model.device)
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=1024,
+        do_sample=False,  # Greedy decoding for more deterministic code generation
+        pad_token_id=tokenizer.eos_token_id,
+    )
     generated_tokens = outputs[0][inputs["input_ids"].shape[1]:]
     answer = tokenizer.decode(generated_tokens, skip_special_tokens=True)
     return answer
@@ -142,5 +172,7 @@ for epoch in range(EPOCHS):
         print(enhanced_prompt)
         generated_code = generate_code(enhanced_prompt)
         print(generated_code)
+        score = judge_response(generated_code)
+        print(score)
         break
     break
