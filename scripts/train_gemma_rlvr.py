@@ -69,13 +69,15 @@ def load_dataset():
     dataset = load_from_disk("./dataset")
     return dataset['train']
 
-def generate_response(prompt):
+def judge_response(answer):
 
     response = client.chat.completions.create(
         messages=[
             {
                 "role": "system",
-                "content": "You are a prompt enhancement assistant. You are given a prompt and you need to enhance it to add fine details for world class output.",
+                "content": """You are a coding judge. You are given html code and your task is to judge the code based on the:
+                The deisgn is asthetic and visually appealing. Give a score between 0 to 5. 0 is the worst and 5 is the best.
+                """
             },
             {
                 "role": "user",
@@ -93,3 +95,12 @@ def generate_response(prompt):
 
     return response.choices[0].message.content
 
+
+dataset = load_dataset()
+EPOCHS = 10
+for epoch in range(EPOCHS):
+    for data in dataset:
+        prompt = data['rewriting_prompt']
+        response = generate_response(prompt)
+        print(response)
+        break
