@@ -39,6 +39,7 @@ from datasets import load_dataset, load_from_disk
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from openai import AzureOpenAI
 from dotenv import load_dotenv
+import json
 
 load_dotenv()
 
@@ -107,7 +108,8 @@ def generate_response(prompt):
     inputs = tokenizer(formatted, return_tensors="pt")
     inputs = inputs.to(device)
     outputs = model.generate(**inputs, max_new_tokens=1024)
-    answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    generated_tokens = outputs[0][inputs["input_ids"].shape[1]:]
+    answer = tokenizer.decode(generated_tokens, skip_special_tokens=True)
     return answer
     
 
@@ -117,7 +119,9 @@ EPOCHS = 10
 for epoch in range(EPOCHS):
     for data in dataset:
         prompt = data['rewriting_prompt']
-        response = generate_response(prompt)
-        print(response)
+        enhanced_prompt = generate_response(prompt)
+        print(enhanced_prompt)
+        generated_code = generate_response(enhanced_prompt)
+        print(generated_code)
         break
     break
