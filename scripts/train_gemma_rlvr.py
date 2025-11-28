@@ -35,7 +35,7 @@ import os
 import torch
 import transformers
 from peft import LoraConfig, get_peft_model
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from openai import AzureOpenAI
 from dotenv import load_dotenv
@@ -63,6 +63,11 @@ model = get_peft_model(model, lora_config)
 model.print_trainable_parameters()
 
 deployment = "gpt-4"
+
+
+def load_dataset():
+    dataset = load_from_disk("./dataset")
+    return dataset['train']
 
 
 response = client.chat.completions.create(
@@ -94,3 +99,4 @@ response = client.chat.completions.create(
 )
 
 print(response.choices[0].message.content)
+
