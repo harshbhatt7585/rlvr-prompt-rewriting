@@ -113,6 +113,25 @@ def generate_response(prompt):
     return answer
     
 
+def generate_code(prompt):
+    messages = [
+        {
+            "role": "system",
+            "content": "You are a code generator. You are given a prompt and you need to generate the code based on the prompt.",
+        },
+        {
+            "role": "user",
+            "content": prompt + " Only return the code in the json format. Do not provide any other text.",
+        },
+    ]
+    formatted = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    inputs = tokenizer(formatted, return_tensors="pt")
+    inputs = inputs.to(device)
+    outputs = model.generate(**inputs, max_new_tokens=1024, temperature=0.01)
+    generated_tokens = outputs[0][inputs["input_ids"].shape[1]:]
+    answer = tokenizer.decode(generated_tokens, skip_special_tokens=True)
+    return answer
+
 
 dataset = get_dataset()
 EPOCHS = 10
@@ -121,7 +140,7 @@ for epoch in range(EPOCHS):
         prompt = data['rewriting_prompt']
         enhanced_prompt = generate_response(prompt)
         print(enhanced_prompt)
-        generated_code = generate_response(enhanced_prompt)
+        generated_code = generate_code(enhanced_prompt)
         print(generated_code)
         break
     break
