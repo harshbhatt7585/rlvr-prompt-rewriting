@@ -1,0 +1,40 @@
+{
+  "os": "Linux-6.1.141-165.249.amzn2023.x86_64-x86_64-with-glibc2.34",
+  "python": "CPython 3.13.5",
+  "startedAt": "2025-11-29T04:42:40.156640Z",
+  "program": "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/scripts/train_gemma_rlvr.py",
+  "codePath": "scripts/train_gemma_rlvr.py",
+  "codePathLocal": "scripts/train_gemma_rlvr.py",
+  "git": {
+    "remote": "https://github.com/harshbhatt7585/rlvr-prompt-rewriting.git",
+    "commit": "7140691a81618db868b9efa96f68bd05d41a8127"
+  },
+  "email": "harshbhatt7585@gmail.com",
+  "root": "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting",
+  "host": "ip-172-31-68-158.ec2.internal",
+  "executable": "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/bin/python",
+  "cpu_count": 2,
+  "cpu_count_logical": 4,
+  "gpu": "Tesla T4",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "214668652544",
+      "used": "58562187264"
+    }
+  },
+  "memory": {
+    "total": "16545619968"
+  },
+  "gpu_nvidia": [
+    {
+      "name": "Tesla T4",
+      "memoryTotal": "16106127360",
+      "cudaCores": 2560,
+      "architecture": "Turing",
+      "uuid": "GPU-0c86ff53-5d97-c9d0-f616-eadceb4ad5ee"
+    }
+  ],
+  "cudaVersion": "12.8",
+  "writerId": "32csifuvew8x0cgrdqhzhgly2buhc6h3"
+}

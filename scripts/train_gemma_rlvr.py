@@ -56,12 +56,11 @@ client = AzureOpenAI(
 device = 'cuda'
 model_name = "google/gemma-3-1b-it"
 
-# Configure 4-bit quantization for faster inference and lower memory usage
+# Configure 8-bit quantization for better speed/quality balance on 16GB GPU
 bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16,
-    bnb_4bit_use_double_quant=True,
+    load_in_8bit=True,
+    llm_int8_threshold=6.0,
+    llm_int8_has_fp16_weight=False,
 )
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -87,15 +86,16 @@ model.print_trainable_parameters()
 
 deployment = "gpt-4"
 
-# PPO Hyperparameters
+# PPO Hyperparameters (Optimized for 16GB GPU)
 LEARNING_RATE = 1e-5
-BATCH_SIZE = 4
-BUFFER_SIZE = 100
+BATCH_SIZE = 8  # Increased from 4 to 8 for better GPU utilization
+GRADIENT_ACCUMULATION_STEPS = 4  # Effective batch size = 8 * 4 = 32
+BUFFER_SIZE = 256  # Increased buffer size for more diverse experiences
 CLIP_EPSILON = 0.2
 VALUE_COEF = 0.5
 ENTROPY_COEF = 0.01
 GAMMA = 0.99
-MIN_BUFFER_SIZE = 16  # Minimum experiences before starting training
+MIN_BUFFER_SIZE = 32  # Increased minimum buffer size
 
 
 def get_dataset():
@@ -150,16 +150,21 @@ def generate_response(prompt):
     ]
     formatted = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(formatted, return_tensors="pt").to(model.device)
-    outputs = model.generate(
-        **inputs,
-        max_new_tokens=1024,
-        do_sample=True,
-        temperature=0.7,
-        top_p=0.9,
-        top_k=50,
-        repetition_penalty=1.1,
-        pad_token_id=tokenizer.eos_token_id,
-    )
+
+    # Optimized generation settings for speed
+    with torch.cuda.amp.autocast():  # Use mixed precision for generation too
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=512,  # Reduced from 1024 for faster generation
+            do_sample=True,
+            temperature=0.7,
+            top_p=0.9,
+            top_k=50,
+            repetition_penalty=1.1,
+            pad_token_id=tokenizer.eos_token_id,
+            use_cache=True,  # Enable KV cache for faster generation
+        )
+
     generated_tokens = outputs[0][inputs["input_ids"].shape[1]:]
     answer = tokenizer.decode(generated_tokens, skip_special_tokens=True)
     return answer
@@ -190,45 +195,57 @@ def generate_code(prompt):
 
 
 def compute_log_probs(prompts, responses, requires_grad=False):
-    """Compute log probabilities for generated responses given prompts.
+    """Compute log probabilities for generated responses given prompts (BATCHED).
 
     Args:
         prompts: List of input prompts
         responses: List of generated responses
         requires_grad: If True, compute gradients (for training). If False, use no_grad (for storing old probs)
     """
-    log_probs_list = []
-
+    # Format all prompts
+    formatted_prompts = []
+    full_texts = []
     for prompt, response in zip(prompts, responses):
         messages = [{"role": "user", "content": prompt}]
         formatted = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        full_text = formatted + response
+        formatted_prompts.append(formatted)
+        full_texts.append(formatted + response)
 
-        # Tokenize input and full sequence
-        inputs = tokenizer(formatted, return_tensors="pt").to(model.device)
-        full_inputs = tokenizer(full_text, return_tensors="pt").to(model.device)
+    # Batch tokenize with padding
+    prompt_inputs = tokenizer(formatted_prompts, return_tensors="pt", padding=True, truncation=True).to(model.device)
+    full_inputs = tokenizer(full_texts, return_tensors="pt", padding=True, truncation=True).to(model.device)
 
-        # Get model outputs
-        if requires_grad:
+    # Get model outputs in batch
+    if requires_grad:
+        outputs = model(**full_inputs)
+        logits = outputs.logits
+    else:
+        with torch.no_grad():
             outputs = model(**full_inputs)
             logits = outputs.logits
+
+    # Compute log probs for each sequence in batch
+    log_probs_list = []
+    for i, (prompt_len, full_len) in enumerate(zip(prompt_inputs.attention_mask.sum(dim=1), full_inputs.attention_mask.sum(dim=1))):
+        # Get the response portion
+        response_start = prompt_len.item()
+        response_end = full_len.item()
+
+        if response_end > response_start:
+            # Get logits and tokens for response
+            response_logits = logits[i, response_start-1:response_end-1, :]
+            response_tokens = full_inputs.input_ids[i, response_start:response_end]
+
+            # Compute log probabilities
+            log_probs = F.log_softmax(response_logits, dim=-1)
+            token_log_probs = log_probs[range(len(response_tokens)), response_tokens]
+
+            # Average log prob across tokens
+            mean_log_prob = token_log_probs.mean()
+            log_probs_list.append(mean_log_prob)
         else:
-            with torch.no_grad():
-                outputs = model(**full_inputs)
-                logits = outputs.logits
-
-        # Calculate log probs for generated tokens only
-        response_start_idx = inputs["input_ids"].shape[1]
-        response_logits = logits[0, response_start_idx-1:-1, :]
-        response_tokens = full_inputs["input_ids"][0, response_start_idx:]
-
-        # Compute log probabilities
-        log_probs = F.log_softmax(response_logits, dim=-1)
-        token_log_probs = log_probs[range(len(response_tokens)), response_tokens]
-
-        # Average log prob across tokens
-        mean_log_prob = token_log_probs.mean()
-        log_probs_list.append(mean_log_prob)
+            # Handle edge case where response is empty
+            log_probs_list.append(torch.tensor(0.0, device=model.device))
 
     return torch.stack(log_probs_list)
 
@@ -325,6 +342,9 @@ replay_buffer = ReplayBuffer(max_size=BUFFER_SIZE)
 # Initialize optimizer (only trainable parameters)
 optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
 
+# Initialize gradient scaler for mixed precision training
+scaler = torch.cuda.amp.GradScaler()
+
 # Create checkpoints directory
 os.makedirs("./checkpoints", exist_ok=True)
 
@@ -337,6 +357,8 @@ wandb.init(
     config={
         "learning_rate": LEARNING_RATE,
         "batch_size": BATCH_SIZE,
+        "gradient_accumulation_steps": GRADIENT_ACCUMULATION_STEPS,
+        "effective_batch_size": BATCH_SIZE * GRADIENT_ACCUMULATION_STEPS,
         "buffer_size": BUFFER_SIZE,
         "clip_epsilon": CLIP_EPSILON,
         "value_coef": VALUE_COEF,
@@ -345,6 +367,8 @@ wandb.init(
         "min_buffer_size": MIN_BUFFER_SIZE,
         "epochs": EPOCHS,
         "model": model_name,
+        "quantization": "8bit",
+        "mixed_precision": True,
         "lora_r": 8,
         "lora_alpha": 32,
         "lora_dropout": 0.15,
@@ -352,10 +376,13 @@ wandb.init(
 )
 
 print(f"Starting PPO training for {EPOCHS} epochs...")
-print(f"Buffer size: {BUFFER_SIZE}, Batch size: {BATCH_SIZE}, Min buffer size: {MIN_BUFFER_SIZE}")
+print(f"Batch size: {BATCH_SIZE}, Gradient accumulation: {GRADIENT_ACCUMULATION_STEPS}, Effective batch size: {BATCH_SIZE * GRADIENT_ACCUMULATION_STEPS}")
+print(f"Buffer size: {BUFFER_SIZE}, Min buffer size: {MIN_BUFFER_SIZE}")
+print(f"Using 8-bit quantization and mixed precision training for optimal 16GB GPU utilization")
 
 global_step = 0
 episode_rewards = []  # Track rewards for running average
+accumulation_step = 0  # Track gradient accumulation steps
 
 for epoch in range(EPOCHS):
     print(f"\n{'='*50}")
@@ -411,7 +438,7 @@ for epoch in range(EPOCHS):
 
         # Start training once we have enough experiences
         if len(replay_buffer) >= MIN_BUFFER_SIZE:
-            print(f"\n[Training] Starting PPO update...")
+            print(f"\n[Training] Starting PPO update (accumulation step {accumulation_step + 1}/{GRADIENT_ACCUMULATION_STEPS})...")
 
             # Sample batch from replay buffer
             prompts, enhanced_prompts, rewards, old_log_probs_batch = replay_buffer.sample(BATCH_SIZE)
@@ -420,31 +447,50 @@ for epoch in range(EPOCHS):
             old_log_probs_tensor = torch.tensor(old_log_probs_batch, device=device)
 
             try:
-                # Compute PPO loss
+                # Compute PPO loss with mixed precision
                 model.train()
-                policy_loss, new_log_probs = compute_ppo_loss(
-                    prompts, enhanced_prompts, rewards, old_log_probs_tensor
-                )
 
-                # Backpropagation
-                optimizer.zero_grad()
-                policy_loss.backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-                optimizer.step()
+                with torch.cuda.amp.autocast():
+                    policy_loss, new_log_probs = compute_ppo_loss(
+                        prompts, enhanced_prompts, rewards, old_log_probs_tensor
+                    )
+                    # Scale loss by accumulation steps
+                    policy_loss = policy_loss / GRADIENT_ACCUMULATION_STEPS
 
-                print(f"Policy loss: {policy_loss.item():.4f}")
+                # Backpropagation with gradient scaling
+                scaler.scale(policy_loss).backward()
 
-                # Log training metrics to wandb
-                wandb.log({
-                    "train/policy_loss": policy_loss.item(),
-                    "train/avg_batch_reward": np.mean(rewards),
-                    "train/min_batch_reward": np.min(rewards),
-                    "train/max_batch_reward": np.max(rewards),
-                    "train/step": global_step,
-                })
+                accumulation_step += 1
+
+                # Update weights after accumulating gradients
+                if accumulation_step % GRADIENT_ACCUMULATION_STEPS == 0:
+                    # Unscale gradients and clip
+                    scaler.unscale_(optimizer)
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+
+                    # Optimizer step
+                    scaler.step(optimizer)
+                    scaler.update()
+                    optimizer.zero_grad()
+
+                    print(f"Policy loss: {policy_loss.item() * GRADIENT_ACCUMULATION_STEPS:.4f} (accumulated)")
+
+                    # Log training metrics to wandb
+                    wandb.log({
+                        "train/policy_loss": policy_loss.item() * GRADIENT_ACCUMULATION_STEPS,
+                        "train/avg_batch_reward": np.mean(rewards),
+                        "train/min_batch_reward": np.min(rewards),
+                        "train/max_batch_reward": np.max(rewards),
+                        "train/step": global_step,
+                        "train/accumulation_step": accumulation_step,
+                    })
+                else:
+                    print(f"Gradient accumulated ({accumulation_step % GRADIENT_ACCUMULATION_STEPS}/{GRADIENT_ACCUMULATION_STEPS})")
 
             except Exception as e:
                 print(f"Error during training step: {e}")
+                import traceback
+                traceback.print_exc()
                 continue
 
         global_step += 1

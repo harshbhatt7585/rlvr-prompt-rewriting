@@ -1,0 +1,88 @@
+_wandb:
+    value:
+        cli_version: 0.23.0
+        e:
+            eofapwtv2iszh7ig3qrekgrzjw94hkw4:
+                codePath: scripts/train_gemma_rlvr.py
+                codePathLocal: scripts/train_gemma_rlvr.py
+                cpu_count: 2
+                cpu_count_logical: 4
+                cudaVersion: "12.8"
+                disk:
+                    /:
+                        total: "214668652544"
+                        used: "58560962560"
+                email: harshbhatt7585@gmail.com
+                executable: /home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/bin/python
+                git:
+                    commit: 40ba5648fe9a702899eaf142f8b40040ed9ac2f9
+                    remote: https://github.com/harshbhatt7585/rlvr-prompt-rewriting.git
+                gpu: Tesla T4
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Turing
+                      cudaCores: 2560
+                      memoryTotal: "16106127360"
+                      name: Tesla T4
+                      uuid: GPU-0c86ff53-5d97-c9d0-f616-eadceb4ad5ee
+                host: ip-172-31-68-158.ec2.internal
+                memory:
+                    total: "16545619968"
+                os: Linux-6.1.141-165.249.amzn2023.x86_64-x86_64-with-glibc2.34
+                program: /home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/scripts/train_gemma_rlvr.py
+                python: CPython 3.13.5
+                root: /home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting
+                startedAt: "2025-11-29T04:37:30.550670Z"
+                writerId: eofapwtv2iszh7ig3qrekgrzjw94hkw4
+        m: []
+        python_version: 3.13.5
+        t:
+            "1":
+                - 1
+                - 11
+                - 49
+                - 51
+                - 71
+                - 95
+                - 98
+            "2":
+                - 1
+                - 11
+                - 49
+                - 51
+                - 71
+                - 95
+                - 98
+            "3":
+                - 16
+            "4": 3.13.5
+            "5": 0.23.0
+            "6": 4.57.3
+            "12": 0.23.0
+            "13": linux-x86_64
+batch_size:
+    value: 4
+buffer_size:
+    value: 100
+clip_epsilon:
+    value: 0.2
+entropy_coef:
+    value: 0.01
+epochs:
+    value: 10
+gamma:
+    value: 0.99
+learning_rate:
+    value: 1e-05
+lora_alpha:
+    value: 32
+lora_dropout:
+    value: 0.15
+lora_r:
+    value: 8
+min_buffer_size:
+    value: 16
+model:
+    value: google/gemma-3-1b-it
+value_coef:
+    value: 0.5

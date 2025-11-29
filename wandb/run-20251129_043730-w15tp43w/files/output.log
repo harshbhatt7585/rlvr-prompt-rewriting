@@ -44,3 +44,137 @@ Do the following steps:
 Enhanced prompt: ```json
 {
   "prompt": "Create a modern, responsive HTML page designed for a secure online login form. The page should include:\n\n*   A clear and prom...
+Generated code (first 100 chars): ```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" con...
+Reward: 5/5
+Buffer size: 3/100
+
+[Step 3] Original prompt: Enhance the following prompt to add fine details for world class output.
+
+Do the following steps:
+1....
+Enhanced prompt: ```json
+{
+  "prompt": "Create a modern and responsive HTML page with a text input form and a submit button. The form should have the following feature...
+Generated code (first 100 chars): ```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" con...
+Reward: 5/5
+Buffer size: 4/100
+
+[Step 4] Original prompt: Enhance the following prompt to add fine details for world class output.
+
+Do the following steps:
+1....
+Enhanced prompt: ```json
+{
+  "prompt": "Create a modern and clean HTML page with a responsive table displaying the following information:\n\n**Table Structure:**\n*   ...
+Generated code (first 100 chars): ```json
+{
+  "code": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <met...
+Reward: 5/5
+Buffer size: 5/100
+
+[Step 5] Original prompt: Enhance the following prompt to add fine details for world class output.
+
+Do the following steps:
+1....
+Enhanced prompt: ```json
+{
+  "prompt": "Create a modern, responsive HTML page with the following elements:\n\n**Heading:** \"My Awesome Page\" (bold, 30px font size, r...
+Generated code (first 100 chars): ```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" con...
+Reward: 5/5
+Buffer size: 6/100
+Traceback (most recent call last):
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/scripts/train_gemma_rlvr.py", line 369, in <module>
+    "model": model_name,
+                      ^^
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/scripts/train_gemma_rlvr.py", line 153, in generate_response
+
+
+    ...<8 lines>...
+            top_k=50,
+
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/peft/peft_model.py", line 926, in generate
+    return self.get_base_model().generate(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/transformers/generation/utils.py", line 2564, in generate
+    result = decoding_method(
+        self,
+    ...<5 lines>...
+        **model_kwargs,
+    )
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/transformers/generation/utils.py", line 2787, in _sample
+    outputs = model_forward(**model_inputs, return_dict=True)
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/transformers/utils/generic.py", line 918, in wrapper
+    output = func(self, *args, **kwargs)
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 658, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+                                       ~~~~~~~~~~^
+        input_ids=input_ids,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/transformers/utils/generic.py", line 1072, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 570, in forward
+    layer_outputs = decoder_layer(
+        hidden_states,
+    ...<8 lines>...
+        **kwargs,
+    )
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/transformers/modeling_layers.py", line 94, in __call__
+    return super().__call__(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/transformers/utils/deprecation.py", line 172, in wrapped_func
+    return func(*args, **kwargs)
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 398, in forward
+    hidden_states = self.mlp(hidden_states)
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 122, in forward
+    down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/bitsandbytes/nn/modules.py", line 532, in forward
+    return bnb.matmul_4bit(x, weight, bias=bias, quant_state=self.weight.quant_state).to(inp_dtype)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+KeyboardInterrupt

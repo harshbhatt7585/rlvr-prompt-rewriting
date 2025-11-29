@@ -19,3 +19,31 @@ config: {'learning_rate': 1e-05, 'batch_size': 4, 'buffer_size': 100, 'clip_epsi
 2025-11-29 04:37:31,465 INFO    MainThread:29926 [wandb_run.py:_redirect():2421] Wrapping output streams.
 2025-11-29 04:37:31,465 INFO    MainThread:29926 [wandb_run.py:_redirect():2444] Redirects installed.
 2025-11-29 04:37:31,467 INFO    MainThread:29926 [wandb_init.py:init():1080] run started, returning control to user process
+2025-11-29 04:42:26,141 INFO    wandb-AsyncioManager-main:29926 [service_client.py:_forward_responses():80] Reached EOF.
+2025-11-29 04:42:26,141 INFO    wandb-AsyncioManager-main:29926 [mailbox.py:close():137] Closing mailbox, abandoning 1 handles.
+2025-11-29 04:42:26,479 ERROR   wandb-AsyncioManager-main:29926 [asyncio_manager.py:fn_wrap_exceptions():183] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/wandb/sdk/lib/asyncio_manager.py", line 181, in fn_wrap_exceptions
+    await fn()
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/wandb/sdk/lib/service/service_client.py", line 38, in publish
+    await self._send_server_request(request)
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/wandb/sdk/lib/service/service_client.py", line 64, in _send_server_request
+    await self._writer.drain()
+  File "/home/ec2-user/miniconda3/lib/python3.13/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home/ec2-user/miniconda3/lib/python3.13/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2025-11-29 04:42:26,483 ERROR   wandb-AsyncioManager-main:29926 [asyncio_manager.py:fn_wrap_exceptions():183] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/wandb/sdk/lib/asyncio_manager.py", line 181, in fn_wrap_exceptions
+    await fn()
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/wandb/sdk/lib/service/service_client.py", line 38, in publish
+    await self._send_server_request(request)
+  File "/home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/.venv/lib/python3.13/site-packages/wandb/sdk/lib/service/service_client.py", line 64, in _send_server_request
+    await self._writer.drain()
+  File "/home/ec2-user/miniconda3/lib/python3.13/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home/ec2-user/miniconda3/lib/python3.13/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost

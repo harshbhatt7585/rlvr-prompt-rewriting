@@ -1,0 +1,21 @@
+2025-11-29 04:42:40,157 INFO    MainThread:34755 [wandb_setup.py:_flush():80] Current SDK version is 0.23.0
+2025-11-29 04:42:40,157 INFO    MainThread:34755 [wandb_setup.py:_flush():80] Configure stats pid to 34755
+2025-11-29 04:42:40,157 INFO    MainThread:34755 [wandb_setup.py:_flush():80] Loading settings from /home/ec2-user/.config/wandb/settings
+2025-11-29 04:42:40,157 INFO    MainThread:34755 [wandb_setup.py:_flush():80] Loading settings from /home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/wandb/settings
+2025-11-29 04:42:40,157 INFO    MainThread:34755 [wandb_setup.py:_flush():80] Loading settings from environment variables
+2025-11-29 04:42:40,157 INFO    MainThread:34755 [wandb_init.py:setup_run_log_directory():713] Logging user logs to /home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/wandb/run-20251129_044240-u2prqj9j/logs/debug.log
+2025-11-29 04:42:40,158 INFO    MainThread:34755 [wandb_init.py:setup_run_log_directory():714] Logging internal logs to /home/ec2-user/workspace/RLVR/rlvr-prompt-rewriting/wandb/run-20251129_044240-u2prqj9j/logs/debug-internal.log
+2025-11-29 04:42:40,158 INFO    MainThread:34755 [wandb_init.py:init():840] calling init triggers
+2025-11-29 04:42:40,158 INFO    MainThread:34755 [wandb_init.py:init():845] wandb.init called with sweep_config: {}
+config: {'learning_rate': 1e-05, 'batch_size': 8, 'gradient_accumulation_steps': 4, 'effective_batch_size': 32, 'buffer_size': 256, 'clip_epsilon': 0.2, 'value_coef': 0.5, 'entropy_coef': 0.01, 'gamma': 0.99, 'min_buffer_size': 32, 'epochs': 10, 'model': 'google/gemma-3-1b-it', 'quantization': '8bit', 'mixed_precision': True, 'lora_r': 8, 'lora_alpha': 32, 'lora_dropout': 0.15, '_wandb': {}}
+2025-11-29 04:42:40,158 INFO    MainThread:34755 [wandb_init.py:init():888] starting backend
+2025-11-29 04:42:40,378 INFO    MainThread:34755 [wandb_init.py:init():891] sending inform_init request
+2025-11-29 04:42:40,383 INFO    MainThread:34755 [wandb_init.py:init():899] backend started and connected
+2025-11-29 04:42:40,384 INFO    MainThread:34755 [wandb_init.py:init():969] updated telemetry
+2025-11-29 04:42:40,390 INFO    MainThread:34755 [wandb_init.py:init():993] communicating run to backend with 90.0 second timeout
+2025-11-29 04:42:40,746 INFO    MainThread:34755 [wandb_init.py:init():1040] starting run threads in backend
+2025-11-29 04:42:40,832 INFO    MainThread:34755 [wandb_run.py:_console_start():2504] atexit reg
+2025-11-29 04:42:40,832 INFO    MainThread:34755 [wandb_run.py:_redirect():2352] redirect: wrap_raw
+2025-11-29 04:42:40,832 INFO    MainThread:34755 [wandb_run.py:_redirect():2421] Wrapping output streams.
+2025-11-29 04:42:40,832 INFO    MainThread:34755 [wandb_run.py:_redirect():2444] Redirects installed.
+2025-11-29 04:42:40,834 INFO    MainThread:34755 [wandb_init.py:init():1080] run started, returning control to user process
