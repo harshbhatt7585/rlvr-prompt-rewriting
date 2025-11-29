@@ -91,29 +91,41 @@ def get_dataset():
 def judge_response(answer):
 
     response = client.chat.completions.create(
+        model=deployment,
+        response_format={"type": "json_object"},
         messages=[
             {
                 "role": "system",
-                "content": """You are a coding judge. You are given html code and your task is to judge the code based on the:
-                The deisgn is asthetic and visually appealing. Give a score between 0 to 5. 0 is the worst and 5 is the best.
-                """
+                "content": """You are an HTML/Frontend judge.
+
+You will receive raw HTML code. Your job is to judge whether the design is:
+
+- visually appealing
+- modern
+- readable
+- well-structured
+- aesthetically pleasing
+
+Score the design from **0 to 5**.
+
+You MUST output only a JSON object with this exact schema:
+
+{
+  "score": <number>
+}
+
+No explanations. No extra text."""
             },
             {
                 "role": "user",
-                "content": answer + " Return the score in the json format. Do not provide any other text.",
-            },
+                "content": answer
+            }
         ],
-        max_completion_tokens=13107,
         temperature=0.01,
-        top_p=1.0,
-        frequency_penalty=0.0,
-        presence_penalty=0.0,
-        model=deployment
-
+        top_p=1.0
     )
 
     return response.choices[0].message.content
-
 
 def generate_response(prompt):
     messages = [
