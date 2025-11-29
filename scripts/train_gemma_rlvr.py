@@ -43,6 +43,7 @@ from dotenv import load_dotenv
 import json
 import random
 import numpy as np
+import wandb
 
 load_dotenv()
 
@@ -330,10 +331,32 @@ os.makedirs("./checkpoints", exist_ok=True)
 dataset = get_dataset()
 EPOCHS = 10
 
+# Initialize wandb
+wandb.init(
+    project="gemma-prompt-rewriting-ppo",
+    config={
+        "learning_rate": LEARNING_RATE,
+        "batch_size": BATCH_SIZE,
+        "buffer_size": BUFFER_SIZE,
+        "clip_epsilon": CLIP_EPSILON,
+        "value_coef": VALUE_COEF,
+        "entropy_coef": ENTROPY_COEF,
+        "gamma": GAMMA,
+        "min_buffer_size": MIN_BUFFER_SIZE,
+        "epochs": EPOCHS,
+        "model": model_name,
+        "lora_r": 8,
+        "lora_alpha": 32,
+        "lora_dropout": 0.15,
+    }
+)
+
 print(f"Starting PPO training for {EPOCHS} epochs...")
 print(f"Buffer size: {BUFFER_SIZE}, Batch size: {BATCH_SIZE}, Min buffer size: {MIN_BUFFER_SIZE}")
 
 global_step = 0
+episode_rewards = []  # Track rewards for running average
+
 for epoch in range(EPOCHS):
     print(f"\n{'='*50}")
     print(f"Epoch {epoch + 1}/{EPOCHS}")
@@ -364,7 +387,23 @@ for epoch in range(EPOCHS):
             # Store experience in replay buffer
             experience = (prompt, enhanced_prompt, reward, old_log_probs[0].item())
             replay_buffer.add(experience)
+            episode_rewards.append(reward)
             print(f"Buffer size: {len(replay_buffer)}/{BUFFER_SIZE}")
+
+            # Compute running averages
+            avg_reward_last_10 = np.mean(episode_rewards[-10:]) if len(episode_rewards) >= 10 else np.mean(episode_rewards)
+            avg_reward_last_50 = np.mean(episode_rewards[-50:]) if len(episode_rewards) >= 50 else np.mean(episode_rewards)
+
+            # Log to wandb
+            wandb.log({
+                "reward": reward,
+                "avg_reward_last_10": avg_reward_last_10,
+                "avg_reward_last_50": avg_reward_last_50,
+                "buffer_size": len(replay_buffer),
+                "old_log_prob": old_log_probs[0].item(),
+                "step": global_step,
+                "epoch": epoch + 1,
+            })
 
         except Exception as e:
             print(f"Error during generation/evaluation: {e}")
@@ -395,6 +434,15 @@ for epoch in range(EPOCHS):
 
                 print(f"Policy loss: {policy_loss.item():.4f}")
 
+                # Log training metrics to wandb
+                wandb.log({
+                    "train/policy_loss": policy_loss.item(),
+                    "train/avg_batch_reward": np.mean(rewards),
+                    "train/min_batch_reward": np.min(rewards),
+                    "train/max_batch_reward": np.max(rewards),
+                    "train/step": global_step,
+                })
+
             except Exception as e:
                 print(f"Error during training step: {e}")
                 continue
@@ -402,15 +450,24 @@ for epoch in range(EPOCHS):
         global_step += 1
 
         # Save checkpoint every 50 steps
-        if global_step % 50 == 0:
+        if global_step % 50 == 0 and global_step > 0:
             checkpoint_path = f"./checkpoints/gemma_ppo_step_{global_step}"
             model.save_pretrained(checkpoint_path)
             tokenizer.save_pretrained(checkpoint_path)
             print(f"\nCheckpoint saved to {checkpoint_path}")
+
+            # Log checkpoint save to wandb
+            wandb.log({"checkpoint_step": global_step})
 
 # Save final model
 final_model_path = "./checkpoints/gemma_ppo_final"
 model.save_pretrained(final_model_path)
 tokenizer.save_pretrained(final_model_path)
 print(f"\nFinal model saved to {final_model_path}")
+
+# Log final model to wandb
+wandb.save(f"{final_model_path}/*")
 print("\nTraining completed!")
+
+# Finish wandb run
+wandb.finish()

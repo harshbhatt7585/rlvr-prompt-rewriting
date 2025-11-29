@@ -1,0 +1,46 @@
+[34m[1mwandb[0m: Detected [openai] in use.
+[34m[1mwandb[0m: Use W&B Weave for improved LLM call tracing. Install Weave with `pip install weave` then add `import weave` to the top of your script.
+[34m[1mwandb[0m: For more information, check out the docs at: https://weave-docs.wandb.ai/
+Starting PPO training for 10 epochs...
+Buffer size: 100, Batch size: 4, Min buffer size: 16
+
+==================================================
+Epoch 1/10
+==================================================
+
+[Step 0] Original prompt: Enhance the following prompt to add fine details for world class output.
+
+Do the following steps:
+1....
+Enhanced prompt: ```json
+{
+  "prompt": "Generate the HTML code for a webpage with a centered headline \"My Portfolio\". The headline should be styled as a blue box wit...
+Generated code (first 100 chars): ```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Portfolio</titl...
+Reward: 4/5
+Buffer size: 1/100
+
+[Step 1] Original prompt: Enhance the following prompt to add fine details for world class output.
+
+Do the following steps:
+1....
+Enhanced prompt: ```json
+{
+  "prompt": "Refine this HTML structure to seamlessly integrate the Bootstrap 4 CSS framework. Specifically, incorporate the Bootstrap 4 gri...
+Generated code (first 100 chars): ```json
+{
+  "code": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <met...
+Reward: 5/5
+Buffer size: 2/100
+
+[Step 2] Original prompt: Enhance the following prompt to add fine details for world class output.
+
+Do the following steps:
+1....
+Enhanced prompt: ```json
+{
+  "prompt": "Create a modern, responsive HTML page designed for a secure online login form. The page should include:\n\n*   A clear and prom...
