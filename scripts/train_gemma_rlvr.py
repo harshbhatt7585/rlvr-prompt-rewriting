@@ -96,16 +96,15 @@ def judge_response(answer):
                 "role": "system",
                 "content": """You are a coding judge. You are given html code and your task is to judge the code based on the:
                 The deisgn is asthetic and visually appealing. Give a score between 0 to 5. 0 is the worst and 5 is the best.
-                Return the score in the json format. Do not provide any other text.
                 """
             },
             {
                 "role": "user",
-                "content": answer,
+                "content": answer + " Return the score in the json format. Do not provide any other text.",
             },
         ],
         max_completion_tokens=13107,
-        temperature=1.0,
+        temperature=0.01,
         top_p=1.0,
         frequency_penalty=0.0,
         presence_penalty=0.0,
@@ -187,6 +186,7 @@ def generate_code_with_gpt(prompt):
     )
 
     return response.choices[0].message.content
+
 
 
 dataset = get_dataset()
