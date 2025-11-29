@@ -96,6 +96,7 @@ def judge_response(answer):
                 "role": "system",
                 "content": """You are a coding judge. You are given html code and your task is to judge the code based on the:
                 The deisgn is asthetic and visually appealing. Give a score between 0 to 5. 0 is the worst and 5 is the best.
+                Return the score in the json format. Do not provide any other text.
                 """
             },
             {
@@ -198,6 +199,7 @@ for epoch in range(EPOCHS):
         generated_code = generate_code_with_gpt(enhanced_prompt)
         print(generated_code)
         score = judge_response(generated_code)
-        print(score)
+        score = json.loads(score)
+        print(score['score'])
         break
     break
