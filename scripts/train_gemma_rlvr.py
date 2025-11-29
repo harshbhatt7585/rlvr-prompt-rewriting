@@ -199,7 +199,8 @@ for epoch in range(EPOCHS):
         generated_code = generate_code_with_gpt(enhanced_prompt)
         print(generated_code)
         score = judge_response(generated_code)
-        score = json.loads(score)
-        print(score['score'])
+        print(score)
+        score = json.loads(score.strip())
+        print(score)
         break
     break
