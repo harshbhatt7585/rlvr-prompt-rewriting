@@ -33,6 +33,7 @@ into:
 
 import os
 import torch
+import torch.nn.functional as F
 import transformers
 from peft import LoraConfig, get_peft_model
 from datasets import load_dataset, load_from_disk
@@ -40,6 +41,8 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from openai import AzureOpenAI
 from dotenv import load_dotenv
 import json
+import random
+import numpy as np
 
 load_dotenv()
 
@@ -82,6 +85,16 @@ model.print_trainable_parameters()
 # model = torch.compile(model, mode="reduce-overhead")
 
 deployment = "gpt-4"
+
+# PPO Hyperparameters
+LEARNING_RATE = 1e-5
+BATCH_SIZE = 4
+BUFFER_SIZE = 100
+CLIP_EPSILON = 0.2
+VALUE_COEF = 0.5
+ENTROPY_COEF = 0.01
+GAMMA = 0.99
+MIN_BUFFER_SIZE = 16  # Minimum experiences before starting training
 
 
 def get_dataset():
@@ -175,6 +188,111 @@ def generate_code(prompt):
     return answer
 
 
+def compute_log_probs(prompts, responses, requires_grad=False):
+    """Compute log probabilities for generated responses given prompts.
+
+    Args:
+        prompts: List of input prompts
+        responses: List of generated responses
+        requires_grad: If True, compute gradients (for training). If False, use no_grad (for storing old probs)
+    """
+    log_probs_list = []
+
+    for prompt, response in zip(prompts, responses):
+        messages = [{"role": "user", "content": prompt}]
+        formatted = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        full_text = formatted + response
+
+        # Tokenize input and full sequence
+        inputs = tokenizer(formatted, return_tensors="pt").to(model.device)
+        full_inputs = tokenizer(full_text, return_tensors="pt").to(model.device)
+
+        # Get model outputs
+        if requires_grad:
+            outputs = model(**full_inputs)
+            logits = outputs.logits
+        else:
+            with torch.no_grad():
+                outputs = model(**full_inputs)
+                logits = outputs.logits
+
+        # Calculate log probs for generated tokens only
+        response_start_idx = inputs["input_ids"].shape[1]
+        response_logits = logits[0, response_start_idx-1:-1, :]
+        response_tokens = full_inputs["input_ids"][0, response_start_idx:]
+
+        # Compute log probabilities
+        log_probs = F.log_softmax(response_logits, dim=-1)
+        token_log_probs = log_probs[range(len(response_tokens)), response_tokens]
+
+        # Average log prob across tokens
+        mean_log_prob = token_log_probs.mean()
+        log_probs_list.append(mean_log_prob)
+
+    return torch.stack(log_probs_list)
+
+
+def compute_advantage(rewards):
+    """Compute normalized advantages from rewards."""
+    rewards = torch.tensor(rewards, dtype=torch.float32, device=device)
+
+    # Normalize rewards to have mean 0 and std 1
+    if len(rewards) > 1:
+        advantages = (rewards - rewards.mean()) / (rewards.std() + 1e-8)
+    else:
+        advantages = rewards
+
+    return advantages
+
+
+def compute_policy_loss(old_log_probs, new_log_probs, advantages, clip_epsilon=CLIP_EPSILON):
+    """Compute PPO clipped policy loss."""
+    ratio = torch.exp(new_log_probs - old_log_probs)
+
+    clipped_ratio = torch.clamp(ratio, 1 - clip_epsilon, 1 + clip_epsilon)
+
+    policy_loss = -torch.min(
+        ratio * advantages,
+        clipped_ratio * advantages
+    ).mean()
+
+    return policy_loss
+
+
+def compute_ppo_loss(prompts, responses, rewards, old_log_probs):
+    """Compute complete PPO loss."""
+    # Get current policy log probs (with gradients for training)
+    new_log_probs = compute_log_probs(prompts, responses, requires_grad=True)
+
+    # Compute advantages
+    advantages = compute_advantage(rewards)
+
+    # Compute policy loss with PPO clipping
+    policy_loss = compute_policy_loss(old_log_probs, new_log_probs, advantages)
+
+    return policy_loss, new_log_probs
+
+
+class ReplayBuffer:
+    def __init__(self, max_size):
+        self.max_size = max_size
+        self.buffer = []
+
+    def add(self, experience):
+        self.buffer.append(experience)
+        if len(self.buffer) > self.max_size:
+            self.buffer.pop(0)
+
+    def sample(self, batch_size):
+        batch = random.sample(self.buffer, min(batch_size, len(self.buffer)))
+        prompts, enhanced_prompts, scores, old_log_probs = zip(*batch)
+        return list(prompts), list(enhanced_prompts), list(scores), list(old_log_probs)
+
+    def __len__(self):
+        return len(self.buffer)
+
+
+
 
 def generate_code_with_gpt(prompt):
     response = client.chat.completions.create(
@@ -200,19 +318,99 @@ def generate_code_with_gpt(prompt):
     return response.choices[0].message.content
 
 
+# Initialize replay buffer
+replay_buffer = ReplayBuffer(max_size=BUFFER_SIZE)
+
+# Initialize optimizer (only trainable parameters)
+optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+
+# Create checkpoints directory
+os.makedirs("./checkpoints", exist_ok=True)
 
 dataset = get_dataset()
 EPOCHS = 10
+
+print(f"Starting PPO training for {EPOCHS} epochs...")
+print(f"Buffer size: {BUFFER_SIZE}, Batch size: {BATCH_SIZE}, Min buffer size: {MIN_BUFFER_SIZE}")
+
+global_step = 0
 for epoch in range(EPOCHS):
-    for data in dataset:
+    print(f"\n{'='*50}")
+    print(f"Epoch {epoch + 1}/{EPOCHS}")
+    print(f"{'='*50}")
+
+    for idx, data in enumerate(dataset):
         prompt = data['rewriting_prompt']
+
+        # Generate enhanced prompt using current policy
         enhanced_prompt = generate_response(prompt)
-        print(enhanced_prompt)
-        generated_code = generate_code_with_gpt(enhanced_prompt)
-        print(generated_code)
-        score = judge_response(generated_code)
-        print(score)
-        score = json.loads(score.strip())
-        print(score)
-        break
-    break
+        print(f"\n[Step {global_step}] Original prompt: {prompt[:100]}...")
+        print(f"Enhanced prompt: {enhanced_prompt[:150]}...")
+
+        # Generate code using GPT with enhanced prompt
+        try:
+            generated_code = generate_code_with_gpt(enhanced_prompt)
+            print(f"Generated code (first 100 chars): {generated_code[:100]}...")
+
+            # Judge the generated code
+            score_response = judge_response(generated_code)
+            score_data = json.loads(score_response.strip())
+            reward = score_data['score']
+            print(f"Reward: {reward}/5")
+
+            # Compute old log probs for the generated response
+            old_log_probs = compute_log_probs([prompt], [enhanced_prompt])
+
+            # Store experience in replay buffer
+            experience = (prompt, enhanced_prompt, reward, old_log_probs[0].item())
+            replay_buffer.add(experience)
+            print(f"Buffer size: {len(replay_buffer)}/{BUFFER_SIZE}")
+
+        except Exception as e:
+            print(f"Error during generation/evaluation: {e}")
+            continue
+
+        # Start training once we have enough experiences
+        if len(replay_buffer) >= MIN_BUFFER_SIZE:
+            print(f"\n[Training] Starting PPO update...")
+
+            # Sample batch from replay buffer
+            prompts, enhanced_prompts, rewards, old_log_probs_batch = replay_buffer.sample(BATCH_SIZE)
+
+            # Convert old_log_probs to tensor
+            old_log_probs_tensor = torch.tensor(old_log_probs_batch, device=device)
+
+            try:
+                # Compute PPO loss
+                model.train()
+                policy_loss, new_log_probs = compute_ppo_loss(
+                    prompts, enhanced_prompts, rewards, old_log_probs_tensor
+                )
+
+                # Backpropagation
+                optimizer.zero_grad()
+                policy_loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                optimizer.step()
+
+                print(f"Policy loss: {policy_loss.item():.4f}")
+
+            except Exception as e:
+                print(f"Error during training step: {e}")
+                continue
+
+        global_step += 1
+
+        # Save checkpoint every 50 steps
+        if global_step % 50 == 0:
+            checkpoint_path = f"./checkpoints/gemma_ppo_step_{global_step}"
+            model.save_pretrained(checkpoint_path)
+            tokenizer.save_pretrained(checkpoint_path)
+            print(f"\nCheckpoint saved to {checkpoint_path}")
+
+# Save final model
+final_model_path = "./checkpoints/gemma_ppo_final"
+model.save_pretrained(final_model_path)
+tokenizer.save_pretrained(final_model_path)
+print(f"\nFinal model saved to {final_model_path}")
+print("\nTraining completed!")
