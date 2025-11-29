@@ -16,9 +16,9 @@ Do the following steps:
 1. Analyze the prompt and understand the user's intent.
 2. Add fine details to the prompt to make it more specific and detailed.
 3. If required add styling, colours, fonts, layouts, animations, etc. to the prompt to more aesthetic and visually appealing output.
-4. Return the enhanced prompt.
+4. Return the enhanced prompt in the json format.
 
-Note: Don't provide explanation and conclusion and don't provide any other text like here is the enhanced prompt. Only return the enhanced prompt.
+Note: Don't provide explanation, code, or markdown formatting. Only return the enhanced prompt in the json format.
 
 Prompt:
 {instruction}

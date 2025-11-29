@@ -163,6 +163,31 @@ def generate_code(prompt):
     return answer
 
 
+
+def generate_code_with_gpt(prompt):
+    response = client.chat.completions.create(
+        messages = [
+        {
+            "role": "system",
+            "content": "You are a code generator. You are given a prompt and you need to generate the code based on the prompt.",
+        },
+        {
+            "role": "user",
+            "content": prompt + " Only return the code in the json format. Do not provide any other text.",
+        },
+    ],
+        max_completion_tokens=13107,
+        temperature=1.0,
+        top_p=1.0,
+        frequency_penalty=0.0,
+        presence_penalty=0.0,
+        model=deployment
+
+    )
+
+    return response.choices[0].message.content
+
+
 dataset = get_dataset()
 EPOCHS = 10
 for epoch in range(EPOCHS):
@@ -170,7 +195,7 @@ for epoch in range(EPOCHS):
         prompt = data['rewriting_prompt']
         enhanced_prompt = generate_response(prompt)
         print(enhanced_prompt)
-        generated_code = generate_code(enhanced_prompt)
+        generated_code = generate_code_with_gpt(enhanced_prompt)
         print(generated_code)
         score = judge_response(generated_code)
         print(score)
